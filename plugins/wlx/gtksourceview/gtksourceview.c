@@ -67,11 +67,11 @@ static gboolean open_file(GtkSourceBuffer *sBuf, const gchar *filename);
 
 static gboolean is_word_char(gunichar ch, gpointer data)
 {
-	return iswalnum(ch) || ch == '_' || ch == '-';
+	return iswalnum(ch) || ch == '_' || ch == '-' || ch == '.';
 }
 static gboolean is_word_break(gunichar ch, gpointer data)
 {
-	return !(iswalnum(ch) || ch == '_' || ch == '-');
+	return !(iswalnum(ch) || ch == '_' || ch == '-' || ch == '.');
 }
 static GtkTextCharPredicate get_pred(const guint search_type)
 {
