@@ -71,7 +71,7 @@ static gboolean is_word_char(gunichar ch, gpointer data)
 }
 static gboolean is_word_break(gunichar ch, gpointer data)
 {
-	return !(iswalnum(ch) || ch == '_' || ch == '-' || ch == '.');
+	return !is_word_char(ch, data);
 }
 static GtkTextCharPredicate get_pred(const guint search_type)
 {
