@@ -36,6 +36,7 @@ gchar *font, *style, *def_lang;
 gchar *ext_pascal, *ext_xml, *ext_ini, *ext_sh, *ext_erl;
 
 gchar *over_ext1, *over_lang1, *over_ext2, *over_lang2, *over_ext3, *over_lang3;
+gboolean over_force1, over_force2, over_force3;
 
 gboolean line_num, hcur_line, draw_spaces, no_cursor;
 gint s_tab, p_above, p_below;
@@ -289,16 +290,49 @@ int DCPCALL ListLoadNext(HWND ParentWin, HWND PluginWin,
 	return LISTPLUGIN_OK;
 }
 
+static void define_lang(GtkSourceLanguage **lang,
+						GtkSourceLanguageManager *lm,
+						const gchar *pattern)
+{
+	if ((*lang == NULL || over_force1) &&
+			 (g_strrstr(over_ext1, pattern) != NULL) &&
+			 (over_ext1 != NULL) && (over_lang1 != NULL))
+		*lang = gtk_source_language_manager_get_language(lm, over_lang1);
+	
+	else if ((*lang == NULL || over_force2) &&
+			 (g_strrstr(over_ext2, pattern) != NULL) &&
+			 (over_ext2 != NULL) && (over_lang2 != NULL))
+		*lang = gtk_source_language_manager_get_language(lm, over_lang2);
+	
+	else if ((*lang == NULL || over_force3) &&
+			 (g_strrstr(over_ext3, pattern) != NULL) &&
+			 (over_ext3 != NULL) && (over_lang3 != NULL))
+		*lang = gtk_source_language_manager_get_language(lm, over_lang3);
+	
+	if (*lang == NULL)
+	{
+		if ((ext_pascal != NULL) && (g_strrstr(ext_pascal, pattern) != NULL))
+			*lang = gtk_source_language_manager_get_language(lm, "pascal");
+		else if ((ext_xml != NULL) && (g_strrstr(ext_xml, pattern) != NULL))
+			*lang = gtk_source_language_manager_get_language(lm, "xml");
+		else if ((ext_ini != NULL) && (g_strrstr(ext_ini, pattern) != NULL))
+			*lang = gtk_source_language_manager_get_language(lm, "ini");
+		else if ((ext_sh != NULL) && (g_strrstr(ext_sh, pattern) != NULL))
+			*lang = gtk_source_language_manager_get_language(lm, "sh");
+		else if ((ext_erl != NULL) && (g_strrstr(ext_erl, pattern) != NULL))
+			*lang = gtk_source_language_manager_get_language(lm, "erlang");
+	}
+}
+
 static gboolean open_file(GtkSourceBuffer *sBuf, const gchar *filename)
 {
 	GtkSourceLanguageManager *lm;
-	GtkSourceLanguage *language = NULL;
+	GtkSourceLanguage *lang = NULL;
 	GError *err = NULL;
 	gboolean reading;
 	GtkTextIter iter;
 	GIOChannel *io;
 	gchar *buffer;
-	gchar *ext;
 	const gchar *content_type;
 	
 	g_return_val_if_fail(sBuf != NULL, FALSE);
@@ -317,58 +351,44 @@ static gboolean open_file(GtkSourceBuffer *sBuf, const gchar *filename)
 	
 	content_type = g_file_info_get_content_type(fileinfo);
 	
-	language = gtk_source_language_manager_guess_language(lm, filename, content_type);
+	lang = gtk_source_language_manager_guess_language(lm, filename, content_type);
 	
 	g_object_unref(fileinfo);
 	g_object_unref(gfile);
 	
-	if (!language)
+	gchar *ext = g_strrstr(filename, ".");
+	if (ext != NULL)
 	{
-		ext = g_strrstr(filename, ".");
-		
-		if (ext != NULL)
-		{
-			ext = g_strdup_printf("%s;", ext);
-			ext = g_ascii_strdown(ext, -1);
-			
-			if ((ext_pascal != NULL) && (g_strrstr(ext_pascal, ext) != NULL))
-				language = gtk_source_language_manager_get_language(lm, "pascal");
-			else if ((ext_xml != NULL) && (g_strrstr(ext_xml, ext) != NULL))
-				language = gtk_source_language_manager_get_language(lm, "xml");
-			else if ((ext_ini != NULL) && (g_strrstr(ext_ini, ext) != NULL))
-				language = gtk_source_language_manager_get_language(lm, "ini");
-			else if ((ext_sh != NULL) && (g_strrstr(ext_sh, ext) != NULL))
-				language = gtk_source_language_manager_get_language(lm, "sh");
-			else if ((ext_erl != NULL) && (g_strrstr(ext_erl, ext) != NULL))
-				language = gtk_source_language_manager_get_language(lm, "erlang");
-			
-			else if ((over_ext1 != NULL) && (over_lang1 != NULL) &&
-					 (g_strrstr(over_ext1, ext) != NULL))
-				language = gtk_source_language_manager_get_language(lm, over_lang1);
-			else if ((over_ext2 != NULL) && (over_lang2 != NULL) &&
-					 (g_strrstr(over_ext2, ext) != NULL))
-				language = gtk_source_language_manager_get_language(lm, over_lang2);
-			else if ((over_ext3 != NULL) && (over_lang3 != NULL) &&
-					 (g_strrstr(over_ext3, ext) != NULL))
-				language = gtk_source_language_manager_get_language(lm, over_lang3);
-			
-			g_free(ext);
-		}
+		ext = g_strdup_printf("%s;", ext);						// allocate memory
+		gchar *l_ext = g_ascii_strdown(ext, -1);				// allocate memory
+		g_free(ext);											// free memory
+		define_lang(&lang, lm, l_ext);
+		g_free(l_ext);											// free memory
 	}
 	
-	//g_return_val_if_fail(language != NULL, FALSE);
-	if ((!language) && (def_lang != NULL))
-		language = gtk_source_language_manager_get_language(lm, def_lang);
-	if (!language)
-		return FALSE;
+	gchar *sfilename = g_strrstr(filename, "/");
+	if (sfilename != NULL)
+	{
+		sfilename++; // without startswith "/"
+		sfilename = g_strdup_printf("%s;", sfilename);			// allocate memory
+		ext = g_strrstr(sfilename, ".");
+		if (ext != NULL) *ext = '\0';
+		gchar *l_sfilename = g_ascii_strdown(sfilename, -1);	// allocate memory
+		g_free(sfilename);										// free memory
+		define_lang(&lang, lm, l_sfilename);
+		g_free(l_sfilename);									// free memory
+	}
 	
-	gtk_source_buffer_set_language(sBuf, language);
-	g_print("%s [%s]\n", _("Language:"), gtk_source_language_get_name(language));
+	//g_return_val_if_fail(lang != NULL, FALSE);
+	if ((!lang) && (def_lang != NULL))
+		lang = gtk_source_language_manager_get_language(lm, def_lang);
+	if (!lang) return FALSE;
 	
+	gtk_source_buffer_set_language(sBuf, lang);
+	g_print("%s [%s]\n", _("Language:"), gtk_source_language_get_name(lang));
 	
 	/* Now load the file from Disk */
 	io = g_io_channel_new_file(filename, "r", &err);
-	
 	if (!io)
 	{
 		g_print("gtksourceview.wlx (%s): %s\n", filename, (err)->message);
@@ -395,7 +415,6 @@ static gboolean open_file(GtkSourceBuffer *sBuf, const gchar *filename)
 		GIOStatus status;
 		
 		status = g_io_channel_read_chars(io, buffer, 4096, &bytes_read, &err);
-		
 		switch (status)
 		{
 		case G_IO_STATUS_EOF:
@@ -430,7 +449,6 @@ static gboolean open_file(GtkSourceBuffer *sBuf, const gchar *filename)
 			break;
 		}
 	}
-	
 	g_free(buffer);
 	
 	gtk_source_buffer_end_not_undoable_action(sBuf);
@@ -450,7 +468,6 @@ static gboolean open_file(GtkSourceBuffer *sBuf, const gchar *filename)
 	
 	g_object_set_data_full(G_OBJECT(sBuf), "filename", g_strdup(filename),
 						   (GDestroyNotify)g_free);
-	
 	return TRUE;
 }
 
@@ -648,10 +665,15 @@ void DCPCALL ListSetDefaultParams(ListDefaultParamStruct* dps)
 		
 		over_ext1 = g_key_file_get_string(cfg, "Override1", "Ext", NULL);
 		over_lang1 = g_key_file_get_string(cfg, "Override1", "Lang", NULL);
+		over_force1 = g_key_file_get_boolean(cfg, "Override1", "Force", &err);
+		
 		over_ext2 = g_key_file_get_string(cfg, "Override2", "Ext", NULL);
 		over_lang2 = g_key_file_get_string(cfg, "Override2", "Lang", NULL);
+		over_force2 = g_key_file_get_boolean(cfg, "Override2", "Force", &err);
+		
 		over_ext3 = g_key_file_get_string(cfg, "Override3", "Ext", NULL);
 		over_lang3 = g_key_file_get_string(cfg, "Override3", "Lang", NULL);
+		over_force3 = g_key_file_get_boolean(cfg, "Override3", "Force", &err);
 	}
 	
 	g_key_file_free(cfg);
