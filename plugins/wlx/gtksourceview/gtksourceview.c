@@ -32,8 +32,11 @@ EXT=\"CSS\"|EXT=\"SH\"|EXT=\"XML\"|EXT=\"INI\"|EXT=\"DIFF\"|EXT=\"PATCH\"|EXT=\"
 EXT=\"XSL\"|EXT=\"LPR\"|EXT=\"PP\"|EXT=\"LPI\"|EXT=\"LFM\"|EXT=\"LPK\"|EXT=\"DOF\"|EXT=\"DPR\""
 
 GtkWrapMode wrap_mode;
-gchar *font, *style, *ext_pascal, *ext_xml, *ext_ini, *ext_sh, *ext_erl, *def_lang;
+gchar *font, *style, *def_lang;
+gchar *ext_pascal, *ext_xml, *ext_ini, *ext_sh, *ext_erl;
+
 gchar *over_ext1, *over_lang1, *over_ext2, *over_lang2, *over_ext3, *over_lang3;
+
 gboolean line_num, hcur_line, draw_spaces, no_cursor;
 gint s_tab, p_above, p_below;
 
@@ -219,8 +222,10 @@ HWND DCPCALL ListLoad(HWND ParentWin, char* FileToLoad, int ShowFlags)
 	/* and a GtkSourceBuffer to hold text (similar to GtkTextBuffer) */
 	sBuf = GTK_SOURCE_BUFFER(gtk_source_buffer_new(NULL));
 	g_object_ref(lm);
-	g_object_set_data_full(G_OBJECT(sBuf), LANGMGR_NAME, lm, (GDestroyNotify)g_object_unref);
-	g_object_set_data_full(G_OBJECT(gFix), BUFF_NAME, sBuf, (GDestroyNotify)g_object_unref);
+	g_object_set_data_full(G_OBJECT(sBuf), LANGMGR_NAME, lm,
+						   (GDestroyNotify)g_object_unref);
+	g_object_set_data_full(G_OBJECT(gFix), BUFF_NAME, sBuf,
+						   (GDestroyNotify)g_object_unref);
 	
 	/* Create the GtkSourceView and associate it with the buffer */
 	sView = gtk_source_view_new_with_buffer(sBuf);
@@ -230,7 +235,8 @@ HWND DCPCALL ListLoad(HWND ParentWin, char* FileToLoad, int ShowFlags)
 	gtk_source_view_set_highlight_current_line(GTK_SOURCE_VIEW(sView), hcur_line);
 	
 	if (draw_spaces)
-		gtk_source_view_set_draw_spaces(GTK_SOURCE_VIEW(sView), GTK_SOURCE_DRAW_SPACES_ALL);
+		gtk_source_view_set_draw_spaces(GTK_SOURCE_VIEW(sView),
+										GTK_SOURCE_DRAW_SPACES_ALL);
 	
 	/* Attach the GtkSourceView to the scrolled Window */
 	gtk_container_add(GTK_CONTAINER(pScrollWin), GTK_WIDGET(sView));
@@ -263,7 +269,8 @@ HWND DCPCALL ListLoad(HWND ParentWin, char* FileToLoad, int ShowFlags)
 	return gFix;
 }
 
-int DCPCALL ListLoadNext(HWND ParentWin,HWND PluginWin,char* FileToLoad,int ShowFlags)
+int DCPCALL ListLoadNext(HWND ParentWin, HWND PluginWin,
+						 char* FileToLoad, int ShowFlags)
 {
 	GtkSourceBuffer *sBuf = g_object_get_data(G_OBJECT(PluginWin), BUFF_NAME);
 	gtk_text_buffer_set_text(GTK_TEXT_BUFFER(sBuf), "", 0);
@@ -303,7 +310,8 @@ static gboolean open_file(GtkSourceBuffer *sBuf, const gchar *filename)
 	
 	GFile *gfile = g_file_new_for_path(filename);
 	g_return_val_if_fail(gfile != NULL, FALSE);
-	GFileInfo *fileinfo = g_file_query_info(gfile, G_FILE_ATTRIBUTE_STANDARD_CONTENT_TYPE,
+	GFileInfo *fileinfo = g_file_query_info(gfile,
+											G_FILE_ATTRIBUTE_STANDARD_CONTENT_TYPE,
 											0, NULL, NULL);
 	g_return_val_if_fail(fileinfo != NULL, FALSE);
 	
@@ -440,7 +448,8 @@ static gboolean open_file(GtkSourceBuffer *sBuf, const gchar *filename)
 	gtk_text_buffer_get_start_iter(GTK_TEXT_BUFFER(sBuf), &iter);
 	gtk_text_buffer_place_cursor(GTK_TEXT_BUFFER(sBuf), &iter);
 	
-	g_object_set_data_full(G_OBJECT(sBuf), "filename", g_strdup(filename), (GDestroyNotify)g_free);
+	g_object_set_data_full(G_OBJECT(sBuf), "filename", g_strdup(filename),
+						   (GDestroyNotify)g_free);
 	
 	return TRUE;
 }
@@ -473,36 +482,43 @@ int DCPCALL ListSearchText(HWND ListWin, char* SearchString, int SearchParameter
 		gtk_text_buffer_get_iter_at_mark(GTK_TEXT_BUFFER(sBuf), &iter, last_pos);
 	
 	if ((SearchParameter & lcs_backwards) && (SearchParameter & lcs_matchcase))
-		found = gtk_source_iter_backward_search(&iter, SearchString, GTK_SOURCE_SEARCH_TEXT_ONLY,
+		found = gtk_source_iter_backward_search(&iter, SearchString,
+												GTK_SOURCE_SEARCH_TEXT_ONLY,
 												&mend, &mstart, NULL);
 	else if (SearchParameter & lcs_matchcase)
-		found = gtk_source_iter_forward_search(&iter, SearchString, GTK_SOURCE_SEARCH_TEXT_ONLY,
+		found = gtk_source_iter_forward_search(&iter, SearchString,
+											   GTK_SOURCE_SEARCH_TEXT_ONLY,
 											   &mstart, &mend, NULL);
 	else if (SearchParameter & lcs_backwards)
-		found = gtk_source_iter_backward_search(&iter, SearchString, GTK_SOURCE_SEARCH_TEXT_ONLY |
-																	 GTK_SOURCE_SEARCH_CASE_INSENSITIVE,
+		found = gtk_source_iter_backward_search(&iter, SearchString,
+												GTK_SOURCE_SEARCH_TEXT_ONLY |
+													GTK_SOURCE_SEARCH_CASE_INSENSITIVE,
 												&mend, &mstart, NULL);
 	else
-		found = gtk_source_iter_forward_search(&iter, SearchString, GTK_SOURCE_SEARCH_TEXT_ONLY |
-																	GTK_SOURCE_SEARCH_CASE_INSENSITIVE,
+		found = gtk_source_iter_forward_search(&iter, SearchString,
+											   GTK_SOURCE_SEARCH_TEXT_ONLY |
+													GTK_SOURCE_SEARCH_CASE_INSENSITIVE,
 											   &mstart, &mend, NULL);
 	
 	if (found)
 	{
 		gtk_text_buffer_select_range(GTK_TEXT_BUFFER(sBuf), &mstart, &mend);
 		gtk_text_buffer_create_mark(GTK_TEXT_BUFFER(sBuf), MARK_NAME, &mend, FALSE);
-		gtk_text_view_scroll_mark_onscreen(GTK_TEXT_VIEW(getFirstChild(getFirstChild(GTK_WIDGET(ListWin)))),
-										   gtk_text_buffer_get_mark(GTK_TEXT_BUFFER(sBuf), MARK_NAME));
+		gtk_text_view_scroll_mark_onscreen(GTK_TEXT_VIEW(getFirstChild(
+														 getFirstChild(GTK_WIDGET(ListWin)))),
+										   gtk_text_buffer_get_mark(GTK_TEXT_BUFFER(sBuf),
+																	MARK_NAME));
 	}
 	else
 	{
-		GtkWidget *dialog = gtk_message_dialog_new(GTK_WINDOW(gtk_widget_get_toplevel(GTK_WIDGET(ListWin))),
-		                    GTK_DIALOG_MODAL, GTK_MESSAGE_INFO, GTK_BUTTONS_OK,
-		                    _("\"%s\" not found!"), SearchString);
+		GtkWidget *dialog = gtk_message_dialog_new(GTK_WINDOW(gtk_widget_get_toplevel(
+															  GTK_WIDGET(ListWin))),
+												   GTK_DIALOG_MODAL, GTK_MESSAGE_INFO,
+												   GTK_BUTTONS_OK, _("\"%s\" not found!"),
+												   SearchString);
 		gtk_dialog_run(GTK_DIALOG(dialog));
 		gtk_widget_destroy(dialog);
 	}
-	
 	return LISTPLUGIN_OK;
 }
 
@@ -510,26 +526,27 @@ int DCPCALL ListSendCommand(HWND ListWin, int Command, int Parameter)
 {
 	GtkSourceBuffer *sBuf;
 	GtkTextIter p;
-
+	
 	sBuf = g_object_get_data(G_OBJECT(ListWin), BUFF_NAME);
-
+	
 	switch (Command)
 	{
 	case lc_copy :
-		gtk_text_buffer_copy_clipboard(GTK_TEXT_BUFFER(sBuf), gtk_clipboard_get(GDK_SELECTION_CLIPBOARD));
+		gtk_text_buffer_copy_clipboard(GTK_TEXT_BUFFER(sBuf),
+									   gtk_clipboard_get(GDK_SELECTION_CLIPBOARD));
 		break;
 		
 	case lc_selectall :
 		gtk_text_buffer_get_start_iter(GTK_TEXT_BUFFER(sBuf), &p);
 		gtk_text_buffer_place_cursor(GTK_TEXT_BUFFER(sBuf), &p);
 		gtk_text_buffer_get_end_iter(GTK_TEXT_BUFFER(sBuf), &p);
-		gtk_text_buffer_move_mark_by_name(GTK_TEXT_BUFFER(sBuf), "selection_bound", &p);
+		gtk_text_buffer_move_mark_by_name(GTK_TEXT_BUFFER(sBuf),
+										  "selection_bound", &p);
 		break;
 		
 	default :
 		return LISTPLUGIN_ERROR;
 	}
-	
 	return LISTPLUGIN_OK;
 }
 void DCPCALL ListSetDefaultParams(ListDefaultParamStruct* dps)
@@ -548,12 +565,12 @@ void DCPCALL ListSetDefaultParams(ListDefaultParamStruct* dps)
 	{
 		strncpy(cfg_path, dlinfo.dli_fname, PATH_MAX);
 		char *pos = strrchr(cfg_path, '/');
-		
 		if (pos)
 			strcpy(pos + 1, cfg_file);
 		
 		setlocale (LC_ALL, "");
-		bindtextdomain(GETTEXT_PACKAGE, g_strdup_printf("%s/langs", g_path_get_dirname(dlinfo.dli_fname)));
+		bindtextdomain(GETTEXT_PACKAGE, g_strdup_printf("%s/langs",
+							g_path_get_dirname(dlinfo.dli_fname)));
 		textdomain(GETTEXT_PACKAGE);
 	}
 	
@@ -576,57 +593,28 @@ void DCPCALL ListSetDefaultParams(ListDefaultParamStruct* dps)
 	else
 	{
 		font = g_key_file_get_string(cfg, "Appearance", "Font", NULL);
-		
-		if (!font)
-			font = "monospace 12";
+		if (!font) font = "monospace 12";
 		
 		style = g_key_file_get_string(cfg, "Appearance", "Style", NULL);
-		
-		if (!style)
-			style = "classic";
+		if (!style) style = "classic";
 		
 		bval = g_key_file_get_boolean(cfg, "Flags", "LineNumbers", &err);
-		
-		if (!bval && !err)
-			line_num = FALSE;
-		else
-			line_num = TRUE;
-		
-		if (err)
-			err = NULL;
+		line_num = (bval || err);
+		if (err) err = NULL;
 		
 		bval = g_key_file_get_boolean(cfg, "Flags", "HighlightCurLine", &err);
-		
-		if (!bval && !err)
-			hcur_line = FALSE;
-		else
-			hcur_line = TRUE;
-		
-		if (err)
-			err = NULL;
+		hcur_line = (bval || err);
+		if (err) err = NULL;
 		
 		bval = g_key_file_get_boolean(cfg, "Flags", "Spaces", &err);
-		
-		if (!bval && !err)
-			draw_spaces = FALSE;
-		else
-			draw_spaces = TRUE;
-		
-		if (err)
-			err = NULL;
+		draw_spaces = (bval || err);
+		if (err) err = NULL;
 		
 		bval = g_key_file_get_boolean(cfg, "Flags", "NoCursor", &err);
-		
-		if (!bval && !err)
-			no_cursor = FALSE;
-		else
-			no_cursor = TRUE;
-		
-		if (err)
-			err = NULL;
+		no_cursor = (bval || err);
+		if (err) err = NULL;
 		
 		s_tab = g_key_file_get_integer(cfg, "Appearance", "TabSize", &err);
-		
 		if (err)
 		{
 			s_tab = 8;
@@ -634,7 +622,6 @@ void DCPCALL ListSetDefaultParams(ListDefaultParamStruct* dps)
 		}
 		
 		p_above = g_key_file_get_integer(cfg, "Appearance", "PAbove", &err);
-
 		if (err)
 		{
 			p_above = 0;
@@ -642,7 +629,6 @@ void DCPCALL ListSetDefaultParams(ListDefaultParamStruct* dps)
 		}
 		
 		p_below = g_key_file_get_integer(cfg, "Appearance", "PBelow", &err);
-		
 		if (err)
 		{
 			p_below = 0;
@@ -650,19 +636,15 @@ void DCPCALL ListSetDefaultParams(ListDefaultParamStruct* dps)
 		}
 		
 		bval = g_key_file_get_boolean(cfg, "Flags", "Wrap", NULL);
+		wrap_mode = bval ? GTK_WRAP_WORD : GTK_WRAP_NONE;
 		
-		if (bval)
-			wrap_mode = GTK_WRAP_WORD;
-		else
-			wrap_mode = GTK_WRAP_NONE;
+		def_lang = g_key_file_get_string(cfg, "Appearance", "DefaultLang", NULL);
 		
 		ext_pascal = g_key_file_get_string(cfg, "Override", "Pascal", NULL);
 		ext_xml = g_key_file_get_string(cfg, "Override", "XML", NULL);
 		ext_ini = g_key_file_get_string(cfg, "Override", "INI", NULL);
 		ext_sh = g_key_file_get_string(cfg, "Override", "SH", NULL);
 		ext_erl = g_key_file_get_string(cfg, "Override", "Erlang", NULL);
-		
-		def_lang = g_key_file_get_string(cfg, "Appearance", "DefaultLang", NULL);
 		
 		over_ext1 = g_key_file_get_string(cfg, "Override1", "Ext", NULL);
 		over_lang1 = g_key_file_get_string(cfg, "Override1", "Lang", NULL);
