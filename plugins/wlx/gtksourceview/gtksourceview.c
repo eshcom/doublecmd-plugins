@@ -33,10 +33,10 @@ EXT=\"XSL\"|EXT=\"LPR\"|EXT=\"PP\"|EXT=\"LPI\"|EXT=\"LFM\"|EXT=\"LPK\"|EXT=\"DOF
 
 GtkWrapMode wrap_mode;
 gchar *font, *style, *def_lang;
-gchar *ext_pascal, *ext_xml, *ext_ini, *ext_sh, *ext_erl;
 
-gchar *over_ext1, *over_lang1, *over_ext2, *over_lang2, *over_ext3, *over_lang3;
-gboolean over_force1, over_force2, over_force3;
+gchar *mask1, *lang1, *mask2, *lang2, *mask3, *lang3, *mask4, *lang4;
+gchar *mask5, *lang5, *mask6, *lang6, *mask7, *lang7, *mask8, *lang8;
+gboolean force1, force2, force3, force4, force5, force6, force7, force8;
 
 gboolean line_num, hcur_line, draw_spaces, no_cursor;
 gint s_tab, p_above, p_below;
@@ -292,36 +292,47 @@ int DCPCALL ListLoadNext(HWND ParentWin, HWND PluginWin,
 
 static void define_lang(GtkSourceLanguage **lang,
 						GtkSourceLanguageManager *lm,
-						const gchar *pattern)
+						const gchar *search)
 {
-	if ((*lang == NULL || over_force1) &&
-			 (g_strrstr(over_ext1, pattern) != NULL) &&
-			 (over_ext1 != NULL) && (over_lang1 != NULL))
-		*lang = gtk_source_language_manager_get_language(lm, over_lang1);
+	if ((*lang == NULL || force1) &&
+			 (g_strrstr(mask1, search) != NULL) &&
+			 (mask1 != NULL) && (lang1 != NULL))
+		*lang = gtk_source_language_manager_get_language(lm, lang1);
 	
-	else if ((*lang == NULL || over_force2) &&
-			 (g_strrstr(over_ext2, pattern) != NULL) &&
-			 (over_ext2 != NULL) && (over_lang2 != NULL))
-		*lang = gtk_source_language_manager_get_language(lm, over_lang2);
+	else if ((*lang == NULL || force2) &&
+			 (g_strrstr(mask2, search) != NULL) &&
+			 (mask2 != NULL) && (lang2 != NULL))
+		*lang = gtk_source_language_manager_get_language(lm, lang2);
 	
-	else if ((*lang == NULL || over_force3) &&
-			 (g_strrstr(over_ext3, pattern) != NULL) &&
-			 (over_ext3 != NULL) && (over_lang3 != NULL))
-		*lang = gtk_source_language_manager_get_language(lm, over_lang3);
+	else if ((*lang == NULL || force3) &&
+			 (g_strrstr(mask3, search) != NULL) &&
+			 (mask3 != NULL) && (lang3 != NULL))
+		*lang = gtk_source_language_manager_get_language(lm, lang3);
 	
-	if (*lang == NULL)
-	{
-		if ((ext_pascal != NULL) && (g_strrstr(ext_pascal, pattern) != NULL))
-			*lang = gtk_source_language_manager_get_language(lm, "pascal");
-		else if ((ext_xml != NULL) && (g_strrstr(ext_xml, pattern) != NULL))
-			*lang = gtk_source_language_manager_get_language(lm, "xml");
-		else if ((ext_ini != NULL) && (g_strrstr(ext_ini, pattern) != NULL))
-			*lang = gtk_source_language_manager_get_language(lm, "ini");
-		else if ((ext_sh != NULL) && (g_strrstr(ext_sh, pattern) != NULL))
-			*lang = gtk_source_language_manager_get_language(lm, "sh");
-		else if ((ext_erl != NULL) && (g_strrstr(ext_erl, pattern) != NULL))
-			*lang = gtk_source_language_manager_get_language(lm, "erlang");
-	}
+	else if ((*lang == NULL || force4) &&
+			 (g_strrstr(mask4, search) != NULL) &&
+			 (mask4 != NULL) && (lang4 != NULL))
+		*lang = gtk_source_language_manager_get_language(lm, lang4);
+	
+	else if ((*lang == NULL || force5) &&
+			 (g_strrstr(mask5, search) != NULL) &&
+			 (mask5 != NULL) && (lang5 != NULL))
+		*lang = gtk_source_language_manager_get_language(lm, lang5);
+	
+	else if ((*lang == NULL || force6) &&
+			 (g_strrstr(mask6, search) != NULL) &&
+			 (mask6 != NULL) && (lang6 != NULL))
+		*lang = gtk_source_language_manager_get_language(lm, lang6);
+	
+	else if ((*lang == NULL || force7) &&
+			 (g_strrstr(mask7, search) != NULL) &&
+			 (mask7 != NULL) && (lang7 != NULL))
+		*lang = gtk_source_language_manager_get_language(lm, lang7);
+	
+	else if ((*lang == NULL || force8) &&
+			 (g_strrstr(mask8, search) != NULL) &&
+			 (mask8 != NULL) && (lang8 != NULL))
+		*lang = gtk_source_language_manager_get_language(lm, lang8);
 }
 
 static gboolean open_file(GtkSourceBuffer *sBuf, const gchar *filename)
@@ -359,24 +370,24 @@ static gboolean open_file(GtkSourceBuffer *sBuf, const gchar *filename)
 	gchar *ext = g_strrstr(filename, ".");
 	if (ext != NULL)
 	{
-		ext = g_strdup_printf("%s;", ext);						// allocate memory
-		gchar *l_ext = g_ascii_strdown(ext, -1);				// allocate memory
-		g_free(ext);											// free memory
+		ext = g_strdup_printf("%s;", ext);				// allocate memory
+		gchar *l_ext = g_ascii_strdown(ext, -1);		// allocate memory
+		g_free(ext);									// free memory
 		define_lang(&lang, lm, l_ext);
-		g_free(l_ext);											// free memory
+		g_free(l_ext);									// free memory
 	}
 	
-	gchar *sfilename = g_strrstr(filename, "/");
-	if (sfilename != NULL)
+	gchar *fname = g_strrstr(filename, "/");
+	if (fname != NULL)
 	{
-		sfilename++; // without startswith "/"
-		sfilename = g_strdup_printf("%s;", sfilename);			// allocate memory
-		ext = g_strrstr(sfilename, ".");
+		fname++; // without startswith "/"
+		fname = g_strdup_printf("%s;", fname);			// allocate memory
+		ext = g_strrstr(fname, ".");
 		if (ext != NULL) *ext = '\0';
-		gchar *l_sfilename = g_ascii_strdown(sfilename, -1);	// allocate memory
-		g_free(sfilename);										// free memory
-		define_lang(&lang, lm, l_sfilename);
-		g_free(l_sfilename);									// free memory
+		gchar *l_fname = g_ascii_strdown(fname, -1);	// allocate memory
+		g_free(fname);									// free memory
+		define_lang(&lang, lm, l_fname);
+		g_free(l_fname);								// free memory
 	}
 	
 	//g_return_val_if_fail(lang != NULL, FALSE);
@@ -657,23 +668,37 @@ void DCPCALL ListSetDefaultParams(ListDefaultParamStruct* dps)
 		
 		def_lang = g_key_file_get_string(cfg, "Appearance", "DefaultLang", NULL);
 		
-		ext_pascal = g_key_file_get_string(cfg, "Override", "Pascal", NULL);
-		ext_xml = g_key_file_get_string(cfg, "Override", "XML", NULL);
-		ext_ini = g_key_file_get_string(cfg, "Override", "INI", NULL);
-		ext_sh = g_key_file_get_string(cfg, "Override", "SH", NULL);
-		ext_erl = g_key_file_get_string(cfg, "Override", "Erlang", NULL);
+		mask1 = g_key_file_get_string(cfg, "Override1", "Mask", NULL);
+		lang1 = g_key_file_get_string(cfg, "Override1", "Lang", NULL);
+		force1 = g_key_file_get_boolean(cfg, "Override1", "Force", &err);
 		
-		over_ext1 = g_key_file_get_string(cfg, "Override1", "Ext", NULL);
-		over_lang1 = g_key_file_get_string(cfg, "Override1", "Lang", NULL);
-		over_force1 = g_key_file_get_boolean(cfg, "Override1", "Force", &err);
+		mask2 = g_key_file_get_string(cfg, "Override2", "Mask", NULL);
+		lang2 = g_key_file_get_string(cfg, "Override2", "Lang", NULL);
+		force2 = g_key_file_get_boolean(cfg, "Override2", "Force", &err);
 		
-		over_ext2 = g_key_file_get_string(cfg, "Override2", "Ext", NULL);
-		over_lang2 = g_key_file_get_string(cfg, "Override2", "Lang", NULL);
-		over_force2 = g_key_file_get_boolean(cfg, "Override2", "Force", &err);
+		mask3 = g_key_file_get_string(cfg, "Override3", "Mask", NULL);
+		lang3 = g_key_file_get_string(cfg, "Override3", "Lang", NULL);
+		force3 = g_key_file_get_boolean(cfg, "Override3", "Force", &err);
 		
-		over_ext3 = g_key_file_get_string(cfg, "Override3", "Ext", NULL);
-		over_lang3 = g_key_file_get_string(cfg, "Override3", "Lang", NULL);
-		over_force3 = g_key_file_get_boolean(cfg, "Override3", "Force", &err);
+		mask4 = g_key_file_get_string(cfg, "Override4", "Mask", NULL);
+		lang4 = g_key_file_get_string(cfg, "Override4", "Lang", NULL);
+		force4 = g_key_file_get_boolean(cfg, "Override4", "Force", &err);
+		
+		mask5 = g_key_file_get_string(cfg, "Override5", "Mask", NULL);
+		lang5 = g_key_file_get_string(cfg, "Override5", "Lang", NULL);
+		force5 = g_key_file_get_boolean(cfg, "Override5", "Force", &err);
+		
+		mask6 = g_key_file_get_string(cfg, "Override6", "Mask", NULL);
+		lang6 = g_key_file_get_string(cfg, "Override6", "Lang", NULL);
+		force6 = g_key_file_get_boolean(cfg, "Override6", "Force", NULL);
+		
+		mask7 = g_key_file_get_string(cfg, "Override7", "Mask", NULL);
+		lang7 = g_key_file_get_string(cfg, "Override7", "Lang", NULL);
+		force7 = g_key_file_get_boolean(cfg, "Override7", "Force", NULL);
+		
+		mask8 = g_key_file_get_string(cfg, "Override8", "Mask", NULL);
+		lang8 = g_key_file_get_string(cfg, "Override8", "Lang", NULL);
+		force8 = g_key_file_get_boolean(cfg, "Override8", "Force", NULL);
 	}
 	
 	g_key_file_free(cfg);
