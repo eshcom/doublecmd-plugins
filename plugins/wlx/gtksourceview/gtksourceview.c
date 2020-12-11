@@ -294,6 +294,8 @@ static void define_lang(GtkSourceLanguage **lang,
 						GtkSourceLanguageManager *lm,
 						const gchar *search)
 {
+	g_print("Search string for define lang: %s\n", search);
+	
 	if ((*lang == NULL || force1) &&
 			 (g_strrstr(mask1, search) != NULL) &&
 			 (mask1 != NULL) && (lang1 != NULL))
@@ -373,7 +375,8 @@ static gboolean open_file(GtkSourceBuffer *sBuf, const gchar *filename)
 		ext = g_strdup_printf("%s;", ext);				// allocate memory
 		gchar *l_ext = g_ascii_strdown(ext, -1);		// allocate memory
 		g_free(ext);									// free memory
-		define_lang(&lang, lm, l_ext);
+		if (*l_ext != '\0')
+			define_lang(&lang, lm, l_ext);
 		g_free(l_ext);									// free memory
 	}
 	
@@ -386,7 +389,8 @@ static gboolean open_file(GtkSourceBuffer *sBuf, const gchar *filename)
 		if (ext != NULL) *ext = '\0';
 		gchar *l_fname = g_ascii_strdown(fname, -1);	// allocate memory
 		g_free(fname);									// free memory
-		define_lang(&lang, lm, l_fname);
+		if (*l_fname != '\0')
+			define_lang(&lang, lm, l_fname);
 		g_free(l_fname);								// free memory
 	}
 	
@@ -690,15 +694,15 @@ void DCPCALL ListSetDefaultParams(ListDefaultParamStruct* dps)
 		
 		mask6 = g_key_file_get_string(cfg, "Override6", "Mask", NULL);
 		lang6 = g_key_file_get_string(cfg, "Override6", "Lang", NULL);
-		force6 = g_key_file_get_boolean(cfg, "Override6", "Force", NULL);
+		force6 = g_key_file_get_boolean(cfg, "Override6", "Force", &err);
 		
 		mask7 = g_key_file_get_string(cfg, "Override7", "Mask", NULL);
 		lang7 = g_key_file_get_string(cfg, "Override7", "Lang", NULL);
-		force7 = g_key_file_get_boolean(cfg, "Override7", "Force", NULL);
+		force7 = g_key_file_get_boolean(cfg, "Override7", "Force", &err);
 		
 		mask8 = g_key_file_get_string(cfg, "Override8", "Mask", NULL);
 		lang8 = g_key_file_get_string(cfg, "Override8", "Lang", NULL);
-		force8 = g_key_file_get_boolean(cfg, "Override8", "Force", NULL);
+		force8 = g_key_file_get_boolean(cfg, "Override8", "Force", &err);
 	}
 	
 	g_key_file_free(cfg);
