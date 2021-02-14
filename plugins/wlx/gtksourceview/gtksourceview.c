@@ -294,7 +294,7 @@ static void define_lang(GtkSourceLanguage **lang,
 						GtkSourceLanguageManager *lm,
 						const gchar *search)
 {
-	g_print("Search string for define lang: %s\n", search);
+	//~ g_print("Search string for define lang: %s\n", search);
 	
 	if ((*lang == NULL || force1) &&
 			 (g_strrstr(mask1, search) != NULL) &&
