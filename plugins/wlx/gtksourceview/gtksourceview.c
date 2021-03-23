@@ -31,6 +31,8 @@
 EXT=\"CSS\"|EXT=\"SH\"|EXT=\"XML\"|EXT=\"INI\"|EXT=\"DIFF\"|EXT=\"PATCH\"|EXT=\"PO\"|EXT=\"PY\"|\
 EXT=\"XSL\"|EXT=\"LPR\"|EXT=\"PP\"|EXT=\"LPI\"|EXT=\"LFM\"|EXT=\"LPK\"|EXT=\"DOF\"|EXT=\"DPR\""
 
+#define CTRL_ALT_MASK (GDK_CONTROL_MASK | GDK_MOD1_MASK)
+
 GtkWrapMode wrap_mode;
 gchar *font, *style, *def_lang;
 
@@ -54,7 +56,16 @@ enum
 	LR_WORD_SEARCH,
 	L_NONWORD_SEARCH,
 	R_NONWORD_SEARCH,
-	LR_NONWORD_SEARCH
+	LR_NONWORD_SEARCH,
+	L_NONSPACE_SEARCH,
+	R_NONSPACE_SEARCH,
+	LR_NONSPACE_SEARCH
+};
+enum
+{
+	NONE_KEY,
+	CTRL_KEY,
+	CTRL_ALT_KEY
 };
 
 
@@ -71,21 +82,38 @@ static gboolean open_file(GtkSourceBuffer *sBuf, const gchar *filename);
 
 static gboolean is_word_char(gunichar ch, gpointer data)
 {
-	return iswalnum(ch) || ch == '_' || ch == '-' || ch == '.';
+	return iswalnum(ch) || ch == '_' || ch == '-';
 }
 static gboolean is_word_break(gunichar ch, gpointer data)
 {
 	return !is_word_char(ch, data);
 }
-static GtkTextCharPredicate get_pred(const guint search_type)
+static gboolean is_wordext_break(gunichar ch, gpointer data)
+{
+	return !is_word_char(ch, data) && ch != '.';
+}
+static gboolean is_space_char(gunichar ch, gpointer data)
+{
+	return iswspace(ch);
+}
+
+static GtkTextCharPredicate get_pred(const guint search_type,
+									 const gboolean extended_word)
 {
 	GtkTextCharPredicate pred;
 	if (search_type == R_WORD_SEARCH ||
 		search_type == L_WORD_SEARCH ||
 		search_type == LR_WORD_SEARCH)
-		pred = (GtkTextCharPredicate)is_word_break;
-	else
+		if (extended_word)
+			pred = (GtkTextCharPredicate)is_wordext_break;
+		else
+			pred = (GtkTextCharPredicate)is_word_break;
+	else if (search_type == L_NONWORD_SEARCH ||
+			 search_type == R_NONWORD_SEARCH ||
+			 search_type == LR_NONWORD_SEARCH)
 		pred = (GtkTextCharPredicate)is_word_char;
+	else
+		pred = (GtkTextCharPredicate)is_space_char;
 	return pred;
 }
 
@@ -134,7 +162,17 @@ void on_mark_set(GtkSourceBuffer *sBuf, GtkTextIter *iter,
 			gdk_event_free(event);
 			return;
 		}
+		guint mod_key = NONE_KEY;
+		GdkModifierType state;
+		if (gdk_event_get_state(event, &state))
+		{
+			if ((state & CTRL_ALT_MASK) == GDK_CONTROL_MASK)
+				mod_key = CTRL_KEY;
+			else if ((state & CTRL_ALT_MASK) == CTRL_ALT_MASK)
+				mod_key = CTRL_ALT_KEY;
+		}
 		gdk_event_free(event);
+		//~ g_print("gtksourceview.wlx, mod_key = %i\n", mod_key);
 		
 		GtkTextIter new_start, new_end;
 		GtkTextIter pre_iter = cur_iter;
@@ -146,35 +184,60 @@ void on_mark_set(GtkSourceBuffer *sBuf, GtkTextIter *iter,
 		right_lim = left_lim;
 		gtk_text_iter_forward_to_line_end(&right_lim);
 		
-		//~ calc search_type
 		guint search_type = NONE_SEARCH;
-		if (gtk_text_iter_starts_line(&cur_iter))
+		
+		//~ calc search_type (with ctrl+alt key pressed)
+		//~ (select non-space sequence)
+		if (mod_key == CTRL_ALT_KEY)
 		{
-			if (is_word_char(gtk_text_iter_get_char(&cur_iter), NULL))
+			if (gtk_text_iter_starts_line(&cur_iter))
+				search_type = R_NONSPACE_SEARCH;
+			else if (gtk_text_iter_ends_line(&cur_iter))
+				search_type = L_NONSPACE_SEARCH;
+			else if (!is_space_char(gtk_text_iter_get_char(&cur_iter), NULL) &&
+					 is_space_char(gtk_text_iter_get_char(&pre_iter), NULL))
+				search_type = R_NONSPACE_SEARCH;
+			else if (is_space_char(gtk_text_iter_get_char(&cur_iter), NULL) &&
+					 !is_space_char(gtk_text_iter_get_char(&pre_iter), NULL))
+				search_type = L_NONSPACE_SEARCH;
+			else if (!is_space_char(gtk_text_iter_get_char(&cur_iter), NULL) &&
+					 !is_space_char(gtk_text_iter_get_char(&pre_iter), NULL))
+				search_type = LR_NONSPACE_SEARCH;
+		}
+		
+		//~ calc search_type
+		if (search_type == NONE_SEARCH)
+		{
+			if (gtk_text_iter_starts_line(&cur_iter))
+			{
+				if (is_word_char(gtk_text_iter_get_char(&cur_iter), NULL))
+					search_type = R_WORD_SEARCH;
+				else
+					search_type = R_NONWORD_SEARCH;
+			}
+			else if (gtk_text_iter_ends_line(&cur_iter))
+			{
+				if (is_word_char(gtk_text_iter_get_char(&pre_iter), NULL))
+					search_type = L_WORD_SEARCH;
+				else
+					search_type = L_NONWORD_SEARCH;
+			}
+			else if (is_word_char(gtk_text_iter_get_char(&cur_iter), NULL) &&
+					 is_word_break(gtk_text_iter_get_char(&pre_iter), NULL))
 				search_type = R_WORD_SEARCH;
-			else
-				search_type = R_NONWORD_SEARCH;
-		}
-		else if (gtk_text_iter_ends_line(&cur_iter))
-		{
-			if (is_word_char(gtk_text_iter_get_char(&pre_iter), NULL))
+			else if (is_word_break(gtk_text_iter_get_char(&cur_iter), NULL) &&
+					 is_word_char(gtk_text_iter_get_char(&pre_iter), NULL))
 				search_type = L_WORD_SEARCH;
+			else if (is_word_char(gtk_text_iter_get_char(&cur_iter), NULL))
+				search_type = LR_WORD_SEARCH;
 			else
-				search_type = L_NONWORD_SEARCH;
+				search_type = LR_NONWORD_SEARCH;
 		}
-		else if (is_word_char(gtk_text_iter_get_char(&cur_iter), NULL) &&
-				 is_word_break(gtk_text_iter_get_char(&pre_iter), NULL))
-			search_type = R_WORD_SEARCH;
-		else if (is_word_break(gtk_text_iter_get_char(&cur_iter), NULL) &&
-				 is_word_char(gtk_text_iter_get_char(&pre_iter), NULL))
-			search_type = L_WORD_SEARCH;
-		else if (is_word_char(gtk_text_iter_get_char(&cur_iter), NULL))
-			search_type = LR_WORD_SEARCH;
-		else
-			search_type = LR_NONWORD_SEARCH;
+		//~ g_print("gtksourceview.wlx, search_type = %i\n", search_type);
 		
 		//~ apply search_type
-		GtkTextCharPredicate pred = get_pred(search_type);
+		GtkTextCharPredicate pred = get_pred(search_type,
+											 (mod_key == CTRL_KEY));
 		if (search_type == R_WORD_SEARCH || search_type == R_NONWORD_SEARCH)
 		{
 			//~ right search
