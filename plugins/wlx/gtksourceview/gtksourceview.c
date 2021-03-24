@@ -231,19 +231,11 @@ void on_mark_set(GtkSourceBuffer *sBuf, GtkTextIter *iter,
 		if (search_type == NONE_SEARCH)
 		{
 			if (gtk_text_iter_starts_line(&cur_iter))
-			{
-				if (is_word_char(gtk_text_iter_get_char(&cur_iter), is_wordext))
-					search_type = R_WORD_SEARCH;
-				else
-					search_type = R_NONWORD_SEARCH;
-			}
+				search_type = is_word_char(gtk_text_iter_get_char(&cur_iter), is_wordext) ?
+									R_WORD_SEARCH : R_NONWORD_SEARCH;
 			else if (gtk_text_iter_ends_line(&cur_iter))
-			{
-				if (is_word_char(gtk_text_iter_get_char(&pre_iter), is_wordext))
-					search_type = L_WORD_SEARCH;
-				else
-					search_type = L_NONWORD_SEARCH;
-			}
+				search_type = is_word_char(gtk_text_iter_get_char(&pre_iter), is_wordext) ?
+									L_WORD_SEARCH : L_NONWORD_SEARCH;
 			else if (is_word_char(gtk_text_iter_get_char(&cur_iter), is_wordext) &&
 					 is_word_break(gtk_text_iter_get_char(&pre_iter), is_wordext))
 				search_type = R_WORD_SEARCH;
