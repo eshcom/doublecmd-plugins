@@ -174,7 +174,7 @@ void on_mark_set(GtkSourceBuffer *sBuf, GtkTextIter *iter,
 										 &cur_iter, &cur_iter);
 			return;
 		}
-		// if GDK_3BUTTON_PRESS - select full line (default behavior -> so exit)
+		// if GDK_3BUTTON_PRESS -> select full line (default behavior -> so exit)
 		GdkEvent *event = gtk_get_current_event();
 		//~ g_print("gtksourceview.wlx, event.type = %d\n", event->type);
 		if (event != NULL && event->type == GDK_3BUTTON_PRESS)
