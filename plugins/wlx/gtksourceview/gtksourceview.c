@@ -25,6 +25,7 @@
 #define GETTEXT_PACKAGE "plugins"
 #define MARK_NAME "last_pos"
 #define BUFF_NAME "srcbuf"
+#define VIEW_NAME "srcview"
 #define LANGMGR_NAME "languages-manager"
 
 #define _detectstring "EXT=\"C\"|EXT=\"H\"|EXT=\"LUA\"|EXT=\"CPP\"|EXT=\"HPP\"|EXT=\"PAS\"|\
@@ -39,6 +40,9 @@ gchar *font, *style, *def_lang;
 gchar *mask1, *lang1, *mask2, *lang2, *mask3, *lang3, *mask4, *lang4;
 gchar *mask5, *lang5, *mask6, *lang6, *mask7, *lang7, *mask8, *lang8;
 gboolean force1, force2, force3, force4, force5, force6, force7, force8;
+
+gchar *indentLang1, *indentLang2, *indentLang3, *indentLang4;
+gint indentSize1, indentSize2, indentSize3, indentSize4;
 
 gboolean line_num, hcur_line, draw_spaces, no_cursor;
 gint s_tab, p_above, p_below;
@@ -77,7 +81,8 @@ static GtkWidget *getFirstChild(GtkWidget *w)
 	return result;
 }
 
-static gboolean open_file(GtkSourceBuffer *sBuf, const gchar *filename);
+static gboolean open_file(GtkSourceView *sView, GtkSourceBuffer *sBuf,
+						  const gchar *filename);
 
 
 static gboolean is_word_char(gunichar ch, gboolean is_wordext)
@@ -315,6 +320,9 @@ HWND DCPCALL ListLoad(HWND ParentWin, char* FileToLoad, int ShowFlags)
 	
 	/* Create the GtkSourceView and associate it with the buffer */
 	sView = gtk_source_view_new_with_buffer(sBuf);
+	//~ esh: save sView by VIEW_NAME
+	g_object_set_data(G_OBJECT(gFix), VIEW_NAME, sView);
+	
 	gtk_widget_modify_font(sView, pango_font_description_from_string(font));
 	gtk_source_view_set_show_line_numbers(GTK_SOURCE_VIEW(sView), line_num);
 	gtk_source_view_set_tab_width(GTK_SOURCE_VIEW(sView), s_tab);
@@ -328,7 +336,7 @@ HWND DCPCALL ListLoad(HWND ParentWin, char* FileToLoad, int ShowFlags)
 	gtk_container_add(GTK_CONTAINER(pScrollWin), GTK_WIDGET(sView));
 	gtk_container_add(GTK_CONTAINER(gFix), pScrollWin);
 	
-	if (!open_file(sBuf, FileToLoad))
+	if (!open_file(GTK_SOURCE_VIEW(sView), sBuf, FileToLoad))
 	{
 		gtk_widget_destroy(GTK_WIDGET(gFix));
 		return NULL;
@@ -358,12 +366,13 @@ HWND DCPCALL ListLoad(HWND ParentWin, char* FileToLoad, int ShowFlags)
 int DCPCALL ListLoadNext(HWND ParentWin, HWND PluginWin,
 						 char* FileToLoad, int ShowFlags)
 {
+	GtkSourceView *sView = g_object_get_data(G_OBJECT(PluginWin), VIEW_NAME);
 	GtkSourceBuffer *sBuf = g_object_get_data(G_OBJECT(PluginWin), BUFF_NAME);
 	gtk_text_buffer_set_text(GTK_TEXT_BUFFER(sBuf), "", 0);
 	
 	init_cur_iter = FALSE;
 	
-	if (!open_file(sBuf, FileToLoad))
+	if (!open_file(sView, sBuf, FileToLoad))
 		return LISTPLUGIN_ERROR;
 	
 	//~ esh: delete search mark for next/prev doc
@@ -379,7 +388,7 @@ static void define_lang(GtkSourceLanguage **lang,
 						GtkSourceLanguageManager *lm,
 						const gchar *search)
 {
-	//~ g_print("Search string for define lang: %s\n", search);
+	//~ g_print("Define lang by search string: %s\n", search);
 	
 	if ((*lang == NULL || force1) &&
 			 (g_strrstr(mask1, search) != NULL) &&
@@ -422,7 +431,26 @@ static void define_lang(GtkSourceLanguage **lang,
 		*lang = gtk_source_language_manager_get_language(lm, lang8);
 }
 
-static gboolean open_file(GtkSourceBuffer *sBuf, const gchar *filename)
+static gint define_indent(GtkSourceLanguage *lang)
+{
+	const gchar *strLang = gtk_source_language_get_id(lang);
+	//~ g_print("Define indent for lang_id: %s\n", strLang);
+	
+	gint indent;
+	if (indentLang1 != NULL && strcmp(strLang, indentLang1) == 0)
+		indent = indentSize1;
+	else if (indentLang2 != NULL && strcmp(strLang, indentLang2) == 0)
+		indent = indentSize2;
+	else if (indentLang3 != NULL && strcmp(strLang, indentLang3) == 0)
+		indent = indentSize3;
+	else if (indentLang4 != NULL && strcmp(strLang, indentLang4) == 0)
+		indent = indentSize4;
+	else
+		indent = s_tab;
+}
+
+static gboolean open_file(GtkSourceView *sView, GtkSourceBuffer *sBuf,
+						  const gchar *filename)
 {
 	GtkSourceLanguageManager *lm;
 	GtkSourceLanguage *lang = NULL;
@@ -433,8 +461,10 @@ static gboolean open_file(GtkSourceBuffer *sBuf, const gchar *filename)
 	gchar *buffer;
 	const gchar *content_type;
 	
+	g_return_val_if_fail(sView != NULL, FALSE);
 	g_return_val_if_fail(sBuf != NULL, FALSE);
 	g_return_val_if_fail(filename != NULL, FALSE);
+	g_return_val_if_fail(GTK_SOURCE_VIEW(sView), FALSE);
 	g_return_val_if_fail(GTK_SOURCE_BUFFER(sBuf), FALSE);
 	
 	/* get the Language for source mimetype */
@@ -480,12 +510,18 @@ static gboolean open_file(GtkSourceBuffer *sBuf, const gchar *filename)
 	}
 	
 	//g_return_val_if_fail(lang != NULL, FALSE);
-	if ((!lang) && (def_lang != NULL))
+	if (!lang && def_lang != NULL)
 		lang = gtk_source_language_manager_get_language(lm, def_lang);
 	if (!lang) return FALSE;
 	
 	gtk_source_buffer_set_language(sBuf, lang);
-	g_print("%s [%s]\n", _("Language:"), gtk_source_language_get_name(lang));
+	
+	//~ esh: set indent
+	gint indent = define_indent(lang);
+	gtk_source_view_set_tab_width(sView, indent);
+	
+	g_print("%s %s, %s %i\n", _("Language:"), gtk_source_language_get_name(lang),
+							  _("TabIndentWidth:"), indent);
 	
 	/* Now load the file from Disk */
 	io = g_io_channel_new_file(filename, "r", &err);
@@ -648,12 +684,12 @@ int DCPCALL ListSendCommand(HWND ListWin, int Command, int Parameter)
 	
 	switch (Command)
 	{
-	case lc_copy :
+	case lc_copy:
 		gtk_text_buffer_copy_clipboard(GTK_TEXT_BUFFER(sBuf),
 									   gtk_clipboard_get(GDK_SELECTION_CLIPBOARD));
 		break;
 		
-	case lc_selectall :
+	case lc_selectall:
 		gtk_text_buffer_get_start_iter(GTK_TEXT_BUFFER(sBuf), &p);
 		gtk_text_buffer_place_cursor(GTK_TEXT_BUFFER(sBuf), &p);
 		gtk_text_buffer_get_end_iter(GTK_TEXT_BUFFER(sBuf), &p);
@@ -661,7 +697,7 @@ int DCPCALL ListSendCommand(HWND ListWin, int Command, int Parameter)
 										  "selection_bound", &p);
 		break;
 		
-	default :
+	default:
 		return LISTPLUGIN_ERROR;
 	}
 	return LISTPLUGIN_OK;
@@ -757,6 +793,7 @@ void DCPCALL ListSetDefaultParams(ListDefaultParamStruct* dps)
 		
 		def_lang = g_key_file_get_string(cfg, "Appearance", "DefaultLang", NULL);
 		
+		// lexer override params
 		mask1 = g_key_file_get_string(cfg, "LexerOverride1", "Mask", NULL);
 		lang1 = g_key_file_get_string(cfg, "LexerOverride1", "Lang", NULL);
 		force1 = g_key_file_get_boolean(cfg, "LexerOverride1", "Force", &err);
@@ -788,8 +825,40 @@ void DCPCALL ListSetDefaultParams(ListDefaultParamStruct* dps)
 		mask8 = g_key_file_get_string(cfg, "LexerOverride8", "Mask", NULL);
 		lang8 = g_key_file_get_string(cfg, "LexerOverride8", "Lang", NULL);
 		force8 = g_key_file_get_boolean(cfg, "LexerOverride8", "Force", &err);
+		
+		// indent override params
+		indentLang1 = g_key_file_get_string(cfg, "IndentOverride1", "Lang", NULL);
+		indentSize1 = g_key_file_get_integer(cfg, "IndentOverride1", "TabSize", &err);
+		if (err)
+		{
+			indentSize1 = s_tab;
+			err = NULL;
+		}
+		
+		indentLang2 = g_key_file_get_string(cfg, "IndentOverride2", "Lang", NULL);
+		indentSize2 = g_key_file_get_integer(cfg, "IndentOverride2", "TabSize", &err);
+		if (err)
+		{
+			indentSize2 = s_tab;
+			err = NULL;
+		}
+		
+		indentLang3 = g_key_file_get_string(cfg, "IndentOverride3", "Lang", NULL);
+		indentSize3 = g_key_file_get_integer(cfg, "IndentOverride3", "TabSize", &err);
+		if (err)
+		{
+			indentSize3 = s_tab;
+			err = NULL;
+		}
+		
+		indentLang4 = g_key_file_get_string(cfg, "IndentOverride4", "Lang", NULL);
+		indentSize4 = g_key_file_get_integer(cfg, "IndentOverride4", "TabSize", &err);
+		if (err)
+		{
+			indentSize4 = s_tab;
+			err = NULL;
+		}
 	}
-	
 	g_key_file_free(cfg);
 	
 	if (err)
