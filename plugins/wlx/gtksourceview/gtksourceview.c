@@ -757,37 +757,37 @@ void DCPCALL ListSetDefaultParams(ListDefaultParamStruct* dps)
 		
 		def_lang = g_key_file_get_string(cfg, "Appearance", "DefaultLang", NULL);
 		
-		mask1 = g_key_file_get_string(cfg, "Override1", "Mask", NULL);
-		lang1 = g_key_file_get_string(cfg, "Override1", "Lang", NULL);
-		force1 = g_key_file_get_boolean(cfg, "Override1", "Force", &err);
+		mask1 = g_key_file_get_string(cfg, "LexerOverride1", "Mask", NULL);
+		lang1 = g_key_file_get_string(cfg, "LexerOverride1", "Lang", NULL);
+		force1 = g_key_file_get_boolean(cfg, "LexerOverride1", "Force", &err);
 		
-		mask2 = g_key_file_get_string(cfg, "Override2", "Mask", NULL);
-		lang2 = g_key_file_get_string(cfg, "Override2", "Lang", NULL);
-		force2 = g_key_file_get_boolean(cfg, "Override2", "Force", &err);
+		mask2 = g_key_file_get_string(cfg, "LexerOverride2", "Mask", NULL);
+		lang2 = g_key_file_get_string(cfg, "LexerOverride2", "Lang", NULL);
+		force2 = g_key_file_get_boolean(cfg, "LexerOverride2", "Force", &err);
 		
-		mask3 = g_key_file_get_string(cfg, "Override3", "Mask", NULL);
-		lang3 = g_key_file_get_string(cfg, "Override3", "Lang", NULL);
-		force3 = g_key_file_get_boolean(cfg, "Override3", "Force", &err);
+		mask3 = g_key_file_get_string(cfg, "LexerOverride3", "Mask", NULL);
+		lang3 = g_key_file_get_string(cfg, "LexerOverride3", "Lang", NULL);
+		force3 = g_key_file_get_boolean(cfg, "LexerOverride3", "Force", &err);
 		
-		mask4 = g_key_file_get_string(cfg, "Override4", "Mask", NULL);
-		lang4 = g_key_file_get_string(cfg, "Override4", "Lang", NULL);
-		force4 = g_key_file_get_boolean(cfg, "Override4", "Force", &err);
+		mask4 = g_key_file_get_string(cfg, "LexerOverride4", "Mask", NULL);
+		lang4 = g_key_file_get_string(cfg, "LexerOverride4", "Lang", NULL);
+		force4 = g_key_file_get_boolean(cfg, "LexerOverride4", "Force", &err);
 		
-		mask5 = g_key_file_get_string(cfg, "Override5", "Mask", NULL);
-		lang5 = g_key_file_get_string(cfg, "Override5", "Lang", NULL);
-		force5 = g_key_file_get_boolean(cfg, "Override5", "Force", &err);
+		mask5 = g_key_file_get_string(cfg, "LexerOverride5", "Mask", NULL);
+		lang5 = g_key_file_get_string(cfg, "LexerOverride5", "Lang", NULL);
+		force5 = g_key_file_get_boolean(cfg, "LexerOverride5", "Force", &err);
 		
-		mask6 = g_key_file_get_string(cfg, "Override6", "Mask", NULL);
-		lang6 = g_key_file_get_string(cfg, "Override6", "Lang", NULL);
-		force6 = g_key_file_get_boolean(cfg, "Override6", "Force", &err);
+		mask6 = g_key_file_get_string(cfg, "LexerOverride6", "Mask", NULL);
+		lang6 = g_key_file_get_string(cfg, "LexerOverride6", "Lang", NULL);
+		force6 = g_key_file_get_boolean(cfg, "LexerOverride6", "Force", &err);
 		
-		mask7 = g_key_file_get_string(cfg, "Override7", "Mask", NULL);
-		lang7 = g_key_file_get_string(cfg, "Override7", "Lang", NULL);
-		force7 = g_key_file_get_boolean(cfg, "Override7", "Force", &err);
+		mask7 = g_key_file_get_string(cfg, "LexerOverride7", "Mask", NULL);
+		lang7 = g_key_file_get_string(cfg, "LexerOverride7", "Lang", NULL);
+		force7 = g_key_file_get_boolean(cfg, "LexerOverride7", "Force", &err);
 		
-		mask8 = g_key_file_get_string(cfg, "Override8", "Mask", NULL);
-		lang8 = g_key_file_get_string(cfg, "Override8", "Lang", NULL);
-		force8 = g_key_file_get_boolean(cfg, "Override8", "Force", &err);
+		mask8 = g_key_file_get_string(cfg, "LexerOverride8", "Mask", NULL);
+		lang8 = g_key_file_get_string(cfg, "LexerOverride8", "Lang", NULL);
+		force8 = g_key_file_get_boolean(cfg, "LexerOverride8", "Force", &err);
 	}
 	
 	g_key_file_free(cfg);
